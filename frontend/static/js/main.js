@@ -17,7 +17,20 @@ function consultarCotacao() {
             return response.json();
         })
         .then(function(data) {
-            document.getElementById('resultado').textContent = 'Valor: ' + data.valor + ', Variação: ' + data.variacao + '%';
+            var resultado = 'Valor: ' + data.valor + ', Variação: ' + data.variacao + '%';
+            var variacaoAbs = Math.abs(data.variacao);
+
+            if (variacaoAbs >= -0.93 && variacaoAbs <= 0.93) {
+                resultado += ' - Variação Bastante Relevante';
+            } else if (variacaoAbs >= -1.85 && variacaoAbs <= 1.85) {
+                resultado += ' - Variação Relevante';
+            } else if (variacaoAbs >= -2.78 && variacaoAbs <= 2.78) {
+                resultado += ' - Variação Pouco Relevante';
+            } else {
+                resultado += ' - Variação Irrelevante';
+            }
+
+            document.getElementById('resultado').textContent = resultado;
         })
         .catch(function(error) {
             console.error('Erro ao buscar cotação:', error);

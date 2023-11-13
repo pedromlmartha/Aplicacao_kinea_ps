@@ -47,18 +47,31 @@ def save_cotacao_to_db(data, valor):
         cursor.execute('INSERT INTO cotacoes (data, valor) VALUES (?, ?)', (data, valor))
         conn.commit()
 
+def fetch_and_save_cotacao_if_needed(data):
+    valor = fetch_cotacao_from_api(data)
+    if valor is not None:
+        save_cotacao_to_db(data, valor)
+    return valor
+
 def calculate_variacao(data_atual_str, valor_atual):
     data_atual = datetime.strptime(data_atual_str, '%Y-%m-%d')
     dia_anterior = data_atual - timedelta(days=1)
-    while dia_anterior.weekday() > 4:
+    while dia_anterior.weekday() > 4:  # Ignora fins de semana
         dia_anterior -= timedelta(days=1)
     dia_anterior_str = dia_anterior.strftime('%Y-%m-%d')
+
+    # Verifica se a cotação do dia anterior está no banco de dados
     cotacao_anterior = get_cotacao_from_db(dia_anterior_str)
-    if cotacao_anterior:
+    if not cotacao_anterior:
+        # Se não estiver, tenta buscar da API e salvar no banco de dados
+        valor_anterior = fetch_and_save_cotacao_if_needed(dia_anterior_str)
+        if valor_anterior is None:
+            return None  # Se não conseguir obter a cotação do dia anterior, retorna None
+    else:
         valor_anterior = cotacao_anterior[1]
-        variacao = ((valor_atual - valor_anterior) / valor_anterior) * 100
-        return variacao
-    return None
+
+    variacao = ((valor_atual - valor_anterior) / valor_anterior) * 100
+    return variacao
 
 @app.route('/cotacao', methods=['GET'])
 def get_cotacao():
